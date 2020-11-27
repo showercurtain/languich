@@ -1,7 +1,7 @@
 # Languich
 A random language I made for no apparent reason
 So now you can do things like:
-'''
+```
 (println (+ 1 2 3 4))
 (var a)
 (set a 12)
@@ -23,4 +23,4 @@ So now you can do things like:
   )
 )
 (fizzbuzz 100 1)
-'''
+```
