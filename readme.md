@@ -1,7 +1,8 @@
 # Languich
 A random language I made for no apparent reason
 So now you can do things like:
-```
+
+```racket
 (println (+ 1 2 3 4))
 (var a)
 (set a 12)
@@ -11,16 +12,9 @@ So now you can do things like:
   (lambda (depth num) 
     (if (<= num depth)
       (exec 
-        (if (% num 3) (display "Fizz")
-          (if (% num 3) (display "Buzz")
-            (if (% num 15) (display "FizzBuzz")
-              (display num)
-            )
-          )
-        )
-      )
-    )
-  )
-)
+        (if (% num 3) (println "Fizz")
+          (if (% num 3) (println "Buzz")
+            (if (% num 15) (println "FizzBuzz")
+              (println num))))))))
 (fizzbuzz 100 1)
 ```
