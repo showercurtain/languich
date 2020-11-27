@@ -8,7 +8,7 @@
 (struct env-pad (local-pad parent-pad) #:transparent #:mutable)
 (struct lamb (params body parent-pad) #:transparent #:mutable)
 
-(define (evaluate expr env)
+(define (evaluate expr [env (new-env)])
   (match expr
     [(? number? n) n]
     [(? string? n) n]
@@ -59,4 +59,4 @@
   (hash-update! (env-pad-local-pad env) name (lambda (x) value)
                 (lambda () (if (null? (env-pad-parent-pad env))
                                (error "Undefined variable" name)
-                               (set-env (env-pad-parent-pad) name value)))))
+                               (set-env (env-pad-parent-pad env) name value)))))
