@@ -5,6 +5,9 @@
 
 '(var a (lambda (text) (print "asdf" text)))
 
+(struct env-pad (local-pad parent-pad) #:transparent #:mutable)
+(struct lamb (params body parent-pad) #:transparent #:mutable)
+
 (define (evaluate expr env)
   (match expr
     [(? number? n) n]
@@ -29,10 +32,31 @@
     [`(print ,arg1 ...) (last (map (lambda (arg-expr) (print (evaluate arg-expr env))) arg1))]
     [`(println ,arg1 ...) (last (map (lambda (arg-expr) (println (evaluate arg-expr env))) arg1))]
     [(? symbol? n) (lookup-env env n)]
-    [`(var ,name ,value) (set-env env name (evaluate value env))]
+    [`(var ,name ,value) (add-env env name (evaluate value env))]
+    [`(set ,name ,value) (set-env env name (evaluate value env))]
     [`(exec ,expr ...) (last (map (lambda (arg) (evaluate arg env)) expr))]
+    [`(lambda (,params ...) ,body) (lamb params body env)]
+    [`(,fexpr ,args ...) (let* ([fval (evaluate fexpr env)]
+                                [argv (map (lambda (arg) (evaluate arg env)) args)]
+                                [body-env (new-env (lamb-parent-pad fval))])
+                           (map (lambda (varname value) (add-env body-env varname value)) (lamb-params fval) argv)
+                           (evaluate (lamb-body fval) body-env))
+                           ]
     ))
 
-(define (new-env) (make-hash))
-(define (lookup-env env name) (hash-ref env name))
-(define (set-env env name value) (hash-set! env name value))
+(define (new-env [parent-pad null]) (env-pad (make-hash) parent-pad))
+
+(define (lookup-env env name)
+  (hash-ref (env-pad-local-pad env) name
+            (lambda () (if (null? (env-pad-parent-pad env))
+                           (error "Undefined variable" name)
+                           (lookup-env (env-pad-parent-pad env) name)))))
+
+(define (add-env env name [value null])
+  (hash-set! (env-pad-local-pad env) name value))
+
+(define (set-env env name value)
+  (hash-update! (env-pad-local-pad env) name (lambda (x) value)
+                (lambda () (if (null? (env-pad-parent-pad env))
+                               (error "Undefined variable" name)
+                               (set-env (env-pad-parent-pad) name value)))))
