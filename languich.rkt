@@ -3,8 +3,6 @@
 
 (provide (all-defined-out))
 
-'(var a (lambda (text) (print "asdf" text)))
-
 (struct env-pad (local-pad parent-pad) #:transparent #:mutable)
 (struct lamb (params body parent-pad) #:transparent #:mutable)
 
@@ -29,9 +27,14 @@
     [`(<= ,arg1 ,arg2) (<= (evaluate arg1 env) (evaluate arg2 env))]
     [`(>= ,arg1 ,arg2) (>= (evaluate arg1 env) (evaluate arg2 env))]
     [`(== ,arg1 ,arg2) (= (evaluate arg1 env) (evaluate arg2 env))]
-    [`(print ,arg1 ...) (last (map (lambda (arg-expr) (print (evaluate arg-expr env))) arg1))]
-    [`(println ,arg1 ...) (last (map (lambda (arg-expr) (println (evaluate arg-expr env))) arg1))]
+    [`(print ,arg1 ...) (last (map (lambda (arg-expr) (display (evaluate arg-expr env))) arg1))]
+    [`(println ,arg1 ...) 
+        (let
+          ([output (last (map (lambda (arg-expr) (display (evaluate arg-expr env))) arg1))])
+          (display "\n")
+          output)]
     [(? symbol? n) (lookup-env env n)]
+    [`(var ,name) (add-env env name)]
     [`(var ,name ,value) (add-env env name (evaluate value env))]
     [`(set ,name ,value) (set-env env name (evaluate value env))]
     [`(exec ,expr ...) (last (map (lambda (arg) (evaluate arg env)) expr))]
@@ -60,3 +63,7 @@
                 (lambda () (if (null? (env-pad-parent-pad env))
                                (error "Undefined variable" name)
                                (set-env (env-pad-parent-pad env) name value)))))
+
+;(define (shell [env (new-env)]) (begin (evaluate (read-line (current-input-port) 'any) env) (shell env)))
+
+;(shell)
