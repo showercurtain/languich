@@ -20,6 +20,7 @@
      (/ (evaluate arg1 env) (foldl * (evaluate arg2 env) (map (lambda (arg-expr) (evaluate arg-expr env)) arg3)))]
     [`(- ,arg1 ,arg2 ,arg3 ...)
      (- (evaluate arg1 env) (foldl + (evaluate arg2 env) (map (lambda (arg-expr) (evaluate arg-expr env)) arg3)))]
+    [`(% ,arg1 ,arg2) (remainder (evaluate arg1 env) (evaluate arg2 env))]
 
     ;[`(,arg1 * ,arg2) (* (evaluate arg1 env) (evaluate arg2 env))]
     [`(if ,condit ,t-case) (if (evaluate condit env) (evaluate t-case env) #f)]
