@@ -6,11 +6,12 @@
 (struct env-pad (local-pad parent-pad) #:transparent #:mutable)
 (struct lamb (params body parent-pad) #:transparent #:mutable)
 
-(define (evaluate expr [env (new-env)])
+(define (evaluate expr [env (new-parent-env)])
   (match expr
     [(? number? n) n]
     [(? string? n) n]
     [(? boolean? n) n]
+    [(? procedure? n) (n)]
     ;    [`(+ ,arg1 ,arg2 ,arg3 ...) (pretty-print `(arg1 ,arg1 arg2 ,arg2 arg3 ,arg3))]
     [`(+ ,arg1 ,arg2 ,arg3 ...)
      (foldl + (evaluate arg1 env) (map (lambda (arg-expr) (evaluate arg-expr env)) (cons arg2 arg3)))]
@@ -50,6 +51,12 @@
 
 (define (new-env [parent-pad null]) (env-pad (make-hash) parent-pad))
 
+(define (new-parent-env) (begin
+  ; all them builtins go here
+  (define env (new-env))
+  (add-env env 'asdf (lamb '() (lambda () (display "asdfghjk")) env))
+  env
+))
 (define (lookup-env env name)
   (hash-ref (env-pad-local-pad env) name
             (lambda () (if (null? (env-pad-parent-pad env))
@@ -65,6 +72,6 @@
                                (error "Undefined variable" name)
                                (set-env (env-pad-parent-pad env) name value)))))
 
-;(define (shell [env (new-env)]) (begin (evaluate (read-line (current-input-port) 'any) env) (shell env)))
+;(define (shell [env (new-env)]) (begin (display "> ") (evaluate (read-line (current-input-port) 'any) env) (shell env)))
 
 ;(shell)
