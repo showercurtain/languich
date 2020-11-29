@@ -4,14 +4,14 @@
 (provide (all-defined-out))
 
 (struct env-pad (local-pad parent-pad) #:transparent #:mutable)
-(struct lamb (params body parent-pad) #:transparent #:mutable)
+(struct lamb (params argsname body parent-pad) #:transparent #:mutable)
 
 (define (evaluate expr [env (new-parent-env)])
   (match expr
     [(? number? n) n]
     [(? string? n) n]
     [(? boolean? n) n]
-    [(? procedure? n) (n)]
+    [(? procedure? n) (n env)]
     ;    [`(+ ,arg1 ,arg2 ,arg3 ...) (pretty-print `(arg1 ,arg1 arg2 ,arg2 arg3 ,arg3))]
     [`(+ ,arg1 ,arg2 ,arg3 ...)
      (foldl + (evaluate arg1 env) (map (lambda (arg-expr) (evaluate arg-expr env)) (cons arg2 arg3)))]
@@ -40,11 +40,16 @@
     [`(var ,name ,value) (add-env env name (evaluate value env))]
     [`(set ,name ,value) (set-env env name (evaluate value env))]
     [`(exec ,expr ...) (last (map (lambda (arg) (evaluate arg env)) expr))]
-    [`(lambda (,params ...) ,body) (lamb params body env)]
+    [`(lambda (,params ... ,argsname *) ,body) (lamb params argsname body env)]
+    [`(lambda (,params ...) ,body) (lamb params null body env)]
     [`(,fexpr ,args ...) (let* ([fval (evaluate fexpr env)]
                                 [argv (map (lambda (arg) (evaluate arg env)) args)]
                                 [body-env (new-env (lamb-parent-pad fval))])
-                           (map (lambda (varname value) (add-env body-env varname value)) (lamb-params fval) argv)
+                           (if (not (null? (lamb-argsname fval)))
+                              (add-env body-env (lamb-argsname fval) (list-tail argv (length (lamb-params fval)))) #f)
+                           (map (lambda (varname value) (add-env body-env varname value))
+                              (reverse (lamb-params fval))
+                              (list-tail (reverse argv) (- (length argv) (length (lamb-params fval)))))
                            (evaluate (lamb-body fval) body-env))
                            ]
     ))
@@ -54,7 +59,8 @@
 (define (new-parent-env) (begin
   ; all them builtins go here
   (define env (new-env))
-  (add-env env 'asdf (lamb '() (lambda () (display "asdfghjk")) env))
+  (add-env env 'asdf (lamb '() null (lambda (env) (display "asdfghjk")) env))
+  (add-env env 'looky-here (lamb '(text) null (lambda (env) (print (lookup-env env 'text))) env))
   env
 ))
 (define (lookup-env env name)
